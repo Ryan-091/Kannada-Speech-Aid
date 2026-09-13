@@ -299,7 +299,7 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const BASE_URL = "http://localhost:3000";
+  const BASE_URL = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) || "http://localhost:3000";
 
   const finalUrl =
     typeof input === "string" && input.startsWith("/")
