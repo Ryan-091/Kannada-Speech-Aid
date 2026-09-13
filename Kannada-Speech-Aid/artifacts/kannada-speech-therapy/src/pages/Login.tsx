@@ -6,6 +6,8 @@ import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCreatePatient } from "@workspace/api-client-react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 type Mode = "signin" | "signup" | "forgot";
 
 export default function Login() {
@@ -31,7 +33,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  
   const { mutateAsync: createPatient } = useCreatePatient();
 
   const handleSignIn = async () => {
@@ -39,8 +40,7 @@ export default function Login() {
     setIsLoading(true); setError("");
     try {
       if (role === "therapist") {
-        // Call backend login API for therapist
-        const response = await fetch("http://localhost:3000/api/auth/login", {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, role: "therapist" }),
@@ -56,10 +56,8 @@ export default function Login() {
         }
         login({ id: data.id, name: data.name, role: "therapist", email: data.email });
         navigate("/therapist");
-
       } else {
-        // Call backend login API for patient
-        const response = await fetch("http://localhost:3000/api/auth/login", {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, role: "patient" }),
@@ -82,47 +80,44 @@ export default function Login() {
   };
 
   const handleSignUp = async () => {
-  if (!email || !password || !name) { setError("Please fill in all required fields."); return; }
-  if (password !== confirmPassword) { setError("Passwords do not match."); return; }
-  if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-  setIsLoading(true); setError("");
-  try {
-    await new Promise(r => setTimeout(r, 800));
-    
-    // Call signup API for both patients and therapists
-    const response = await fetch("http://localhost:3000/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        role,
-        age: parseInt(age) || 0,
-        condition: condition || (role === "therapist" ? "N/A" : "New patient"),
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      setError(data.error || "Sign up failed.");
-      return;
-    }
-
-    setSuccessMsg(t("login.signup.success"));
-    setTimeout(() => {
-      if (role === "therapist") {
-        login({ id: data.id, name: data.name, role: "therapist", email: data.email });
-        navigate("/therapist");
-      } else {
-        login({ id: data.id, name: data.name, role: "patient", email: data.email });
-        navigate(`/patient/${data.id}`);
+    if (!email || !password || !name) { setError("Please fill in all required fields."); return; }
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setIsLoading(true); setError("");
+    try {
+      await new Promise(r => setTimeout(r, 800));
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          age: parseInt(age) || 0,
+          condition: condition || (role === "therapist" ? "N/A" : "New patient"),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Sign up failed.");
+        return;
       }
-    }, 1200);
-  } catch {
-    setError("Sign up failed. Please try again.");
-  } finally { setIsLoading(false); }
-};
+      setSuccessMsg(t("login.signup.success"));
+      setTimeout(() => {
+        if (role === "therapist") {
+          login({ id: data.id, name: data.name, role: "therapist", email: data.email });
+          navigate("/therapist");
+        } else {
+          login({ id: data.id, name: data.name, role: "patient", email: data.email });
+          navigate(`/patient/${data.id}`);
+        }
+      }, 1200);
+    } catch {
+      setError("Sign up failed. Please try again.");
+    } finally { setIsLoading(false); }
+  };
+
   const handleForgotPassword = async () => {
     if (!email) { setError("Please enter your email address."); return; }
     setIsLoading(true); setError("");
@@ -143,7 +138,6 @@ export default function Login() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/10 blur-[100px] pointer-events-none" />
 
-      {/* Language Toggle */}
       <div className="absolute top-4 right-4 z-20">
         <button
           onClick={() => setLang(lang === "en" ? "kn" : "en")}
@@ -160,7 +154,6 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md z-10"
       >
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-3xl bg-white shadow-xl flex items-center justify-center mb-4 border border-border">
             <HeartPulse className="w-10 h-10 text-primary" />
@@ -169,9 +162,7 @@ export default function Login() {
           <p className="text-muted-foreground text-center mt-1 text-sm">{t("login.subtitle")}</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white rounded-3xl shadow-2xl shadow-primary/5 border border-border/50 p-8">
-          {/* Mode Tabs */}
           {mode !== "forgot" && (
             <div className="flex bg-muted rounded-2xl p-1 mb-6">
               <button
@@ -185,34 +176,32 @@ export default function Login() {
             </div>
           )}
 
-          {/* Role Selector */}
           {mode !== "forgot" && (
             <div className="mb-5">
               <label className="block text-sm font-medium text-foreground mb-2">{t("login.role")}</label>
               <div className="grid grid-cols-2 gap-3">
-                {/* FIND both role buttons and REPLACE with these: */}
-<button
-  type="button"
-  onClick={() => setRole("patient")}
-  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-semibold ${
-    role === "patient"
-      ? "border-primary bg-primary text-white shadow-md"
-      : "border-border text-muted-foreground hover:border-primary/40 bg-white"
-  }`}
->
-  <User className="w-4 h-4" /> {t("login.patient")}
-</button>
-<button
-  type="button"
-  onClick={() => setRole("therapist")}
-  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-semibold ${
-    role === "therapist"
-      ? "border-primary bg-primary text-white shadow-md"
-      : "border-border text-muted-foreground hover:border-primary/40 bg-white"
-  }`}
->
-  <User className="w-4 h-4" /> {t("login.therapist")}
-</button>
+                <button
+                  type="button"
+                  onClick={() => setRole("patient")}
+                  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-semibold ${
+                    role === "patient"
+                      ? "border-primary bg-primary text-white shadow-md"
+                      : "border-border text-muted-foreground hover:border-primary/40 bg-white"
+                  }`}
+                >
+                  <User className="w-4 h-4" /> {t("login.patient")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("therapist")}
+                  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-semibold ${
+                    role === "therapist"
+                      ? "border-primary bg-primary text-white shadow-md"
+                      : "border-border text-muted-foreground hover:border-primary/40 bg-white"
+                  }`}
+                >
+                  <User className="w-4 h-4" /> {t("login.therapist")}
+                </button>
               </div>
             </div>
           )}
@@ -231,7 +220,6 @@ export default function Login() {
                 </motion.div>
               ) : (
                 <motion.div key={mode} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
-                  {/* Forgot Password header */}
                   {mode === "forgot" && (
                     <div className="mb-2">
                       <h2 className="text-xl font-bold text-foreground">{t("login.forgot")}</h2>
@@ -239,7 +227,6 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Full Name — signup only */}
                   {mode === "signup" && (
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1.5">{t("login.name")} *</label>
@@ -250,7 +237,6 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Age & Condition — patient signup only */}
                   {mode === "signup" && role === "patient" && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -264,7 +250,6 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Email */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">{t("login.email")} *</label>
                     <div className="relative">
@@ -273,7 +258,6 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {/* Password */}
                   {mode !== "forgot" && (
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1.5">{t("login.password")} *</label>
@@ -287,7 +271,6 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Confirm Password — signup only */}
                   {mode === "signup" && (
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1.5">{t("login.confirmpassword")} *</label>
@@ -298,7 +281,6 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Forgot link — signin only */}
                   {mode === "signin" && (
                     <div className="text-right -mt-1">
                       <button type="button" onClick={() => { setMode("forgot"); setError(""); }} className="text-sm text-primary hover:underline font-medium">
@@ -307,14 +289,12 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Error */}
                   {error && (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-destructive bg-destructive/10 px-4 py-2.5 rounded-xl">
                       {error}
                     </motion.p>
                   )}
 
-                  {/* Submit */}
                   <button type="submit" disabled={isLoading} className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-70">
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                       <>
@@ -324,7 +304,6 @@ export default function Login() {
                     )}
                   </button>
 
-                  {/* Mode switch */}
                   <div className="text-center text-sm text-muted-foreground pt-1">
                     {mode === "forgot" ? (
                       <button type="button" onClick={() => { setMode("signin"); setError(""); setSuccessMsg(""); }} className="text-primary hover:underline font-medium">
