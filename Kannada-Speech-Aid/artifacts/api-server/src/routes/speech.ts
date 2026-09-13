@@ -5,8 +5,7 @@ import fetch from "node-fetch";
 
 const router: IRouter = Router();
 
-// Your local Python AI server
-const AI_SERVER_URL = "http://localhost:8000";
+const AI_SERVER_URL = process.env.AI_SERVER_URL || "http://localhost:8000";
 
 router.post("/transcribe", async (req, res) => {
   const body = TranscribeSpeechBody.safeParse(req.body);
