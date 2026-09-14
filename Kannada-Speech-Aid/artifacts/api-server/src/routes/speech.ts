@@ -1,7 +1,6 @@
 import { Router, type IRouter } from "express";
 import { TranscribeSpeechBody } from "@workspace/api-zod";
 import FormData from "form-data";
-import fetch from "node-fetch";
 
 const router: IRouter = Router();
 
