@@ -8,8 +8,12 @@ def load_audio(file_path: str) -> np.ndarray:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Audio file not found: {file_path}")
     try:
-        import librosa
-        data, sr = librosa.load(file_path, sr=SAMPLE_RATE, mono=True)
+        data, sr = sf.read(file_path, dtype='float32', always_2d=False)
+        if data.ndim > 1:
+            data = data.mean(axis=1)
+        if sr != SAMPLE_RATE:
+            import resampy
+            data = resampy.resample(data, sr, SAMPLE_RATE)
         return data
     except Exception as e:
         raise RuntimeError(f"Failed to load audio: {e}")
