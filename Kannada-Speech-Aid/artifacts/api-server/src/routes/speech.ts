@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { TranscribeSpeechBody } from "@workspace/api-zod";
-import FormData from "form-data";
 
 const router: IRouter = Router();
 
@@ -24,21 +23,16 @@ router.post("/transcribe", async (req, res) => {
   ];
 
   try {
-    // ── Step 1: Convert base64 audio to buffer ──────────────────
     const audioBuffer = Buffer.from(audio, "base64");
 
-    // ── Step 2: Send to our Python AI server for scoring ────────
     const formData = new FormData();
-    formData.append("audio", audioBuffer, {
-      filename:    "audio.wav",
-      contentType: "audio/wav",
-    });
+    const blob = new Blob([audioBuffer], { type: "audio/wav" });
+    formData.append("audio", blob, "audio.wav");
     formData.append("expected_text", expectedText || "");
 
     const scoreResponse = await fetch(`${AI_SERVER_URL}/score`, {
-      method:  "POST",
-      body:    formData,
-      headers: formData.getHeaders(),
+      method: "POST",
+      body: formData,
     });
 
     if (scoreResponse.ok) {
@@ -57,7 +51,6 @@ router.post("/transcribe", async (req, res) => {
         accuracyScore   = result.score          || 0;
         feedbackText    = result.feedback       || feedbackText;
 
-        // Build suggestions based on score
         if (accuracyScore >= 90) {
           suggestions = [
             "Excellent pronunciation!",
@@ -82,14 +75,14 @@ router.post("/transcribe", async (req, res) => {
       }
     } else {
       console.error("AI server error:", scoreResponse.status);
-      // Fallback — still return something useful
+      const errorText = await scoreResponse.text();
+      console.error("AI server error body:", errorText);
       transcribedText = "";
       accuracyScore   = 0;
     }
 
   } catch (err) {
     console.error("Error calling AI server:", err);
-    // If AI server is down, return graceful fallback
     feedbackText = "Speech analysis unavailable. Please try again.";
     suggestions  = ["Make sure the AI server is running on port 8000"];
   }
